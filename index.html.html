@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forever Proposal</title>
+    <style>
+        :root {
+            --primary-yellow: #F4C430;
+            --soft-gold: #D4AF37;
+            --sunset-gradient: linear-gradient(135deg, #FFF8E7 0%, #FFE5B4 50%, #FFD1A9 100%);
+            --dark-text: #4E3629;
+            --glass-bg: rgba(255, 255, 255, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --danger-red: #e57373;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: var(--sunset-gradient);
+            color: var(--dark-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+            text-align: center;
+            width: 100%;
+            max-width: 700px;
+            animation: fade 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fade {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        h1 { font-size: 2.3rem; margin-bottom: 20px; }
+        p { font-size: 1.1rem; line-height: 1.6; }
+
+        button, .custom-file-upload {
+            padding: 12px 28px;
+            margin: 10px;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: transform 0.2s, background-color 0.2s;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        button:hover, .custom-file-upload:hover { transform: scale(1.03); }
+
+        #yes {
+            background: #fbc02d;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(251, 192, 45, 0.3);
+        }
+
+        /* Photo Grid & Dynamic Elements */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .slot {
+            position: relative;
+            padding-bottom: 60px; /* Space for absolute actions */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .slot h3 {
+            outline: none;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            display: inline-block;
+            margin-bottom: 10px;
+            width: 95%;
+            word-wrap: break-word;
+            text-align: center;
+        }
+        
+        .slot h3:focus {
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 0 2px var(--soft-gold);
+        }
+
+        .image-container {
+            width: 100%;
+            height: 180px;
+            background: rgba(255,255,255,0.4);
+            border: 2px dashed rgba(0,0,0,0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .slot img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .custom-file-upload {
+            background: rgba(255,255,255,0.7);
+            color: var(--dark-text);
+            font-size: 0.85rem;
+            padding: 6px 14px;
+            margin: 5px 0;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .btn-add {
+            background: #4caf50;
+            color: white;
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-delete {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--danger-red);
+            color: white;
+            font-size: 0.85rem;
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin: 0;
+        }
+        .btn-delete:hover {
+            background: #e53935;
+            transform: translateX(-50%) scale(1.03);
+        }
+
+        /* Full Screen Photo Preview Overlay Overlay */
+        .photo-preview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .photo-preview-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .photo-preview-overlay img {
+            max-width: 90%;
+            max-height: 85%;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .photo-preview-overlay.active img {
+            transform: scale(1);
+        }
+
+        .preview-close-hint {
+            position: absolute;
+            bottom: 25px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 18px;
+            border-radius: 20px;
+            pointer-events: none;
+        }
+
+        /* Envelope Styling */
+        .envelope-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin: 30px 0;
+        }
+
+        .envelope {
+            width: 260px;
+            height: 170px;
+            background: #d8a85b;
+            position: relative;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+            transition: transform .6s;
+        }
+
+        .envelope-flap {
+            position: absolute;
+            width: 0; height: 0;
+            border-left: 130px solid transparent;
+            border-right: 130px solid transparent;
+            border-top: 90px solid #e7c27a;
+            top: 0; left: 0;
+        }
+
+        .envelope-body {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 85px;
+            background: #d8a85b;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .envelope-seal {
+            position: absolute;
+            left: 50%; top: 55%;
+            transform: translate(-50%,-50%);
+            font-size: 40px;
+        }
+
+        #toast {
+            position: fixed;
+            top: 30px; left: 50%;
+            transform: translateX(-50%);
+            background: #fbc02d;
+            padding: 15px 25px;
+            border-radius: 30px;
+            font-weight: bold;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="photoLightbox" class="photo-preview-overlay" onclick="closeImagePreview()">
+        <img id="lightboxImg" src="" alt="Expanded Memory Preview">
+        <div class="preview-close-hint">Click anywhere to close view 🌻</div>
+    </div>
+
+    <div id="intro" class="page active" style="cursor: pointer;">
+        <div class="card">
+            <h1>Every great love story begins with one question...</h1>
+            <p style="color: #8d6e63;">Click anywhere to begin</p>
+        </div>
+    </div>
+
+    <div id="proposal" class="page">
+        <div class="card" id="proposalCard" style="position: relative; overflow: hidden; min-height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px;">
+            <h1>🌻 Will You Be My Girlfriend? 🌻</h1>
+            <div style="margin-top: 30px; display: flex; gap: 40px; justify-content: center; align-items: center; width: 100%; min-height: 60px;">
+                <button id="yes">YES 💛</button>
+                <button id="no" style="position: static; margin: 0; background: #eee; color: #555; transition: all 0.25s ease-out;">NO 🤍</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="letter" class="page">
+        <div id="envelopeBox" class="envelope-container">
+            <div id="envelope" class="envelope" onclick="openEnvelope()">
+                <div class="envelope-flap"></div>
+                <div class="envelope-body"></div>
+                <div class="envelope-seal">💌</div>
+            </div>
+            <p><b>Click the envelope to open it.</b></p>
+        </div>
+
+        <div id="letterPaper" class="card" style="display:none; max-width:650px; margin:auto">
+            <h2>🌻 To My Sunshine 🌻</h2>
+            <p id="typedLetter" style="white-space:pre-wrap; text-align: left; margin: 20px 0;"></p>
+            <button id="ok-btn" style="display:none;" onclick="show('thanks')">Okay 💛</button>
+        </div>
+    </div>
+
+    <div id="thanks" class="page">
+        <div class="card">
+            <h1>💛 Thank You 💛</h1>
+            <p>This moment will always be special to me.</p>
+            <button id="yes" onclick="showFuture()">Continue 🌻</button>
+        </div>
+    </div>
+
+    <div id="future" class="page">
+        <div class="card">
+            <h1>💛 Sorry, girlfriend na kita &lt;3 💛</h1>
+            <p>Di na pwedeng bawiin 😌🌻</p>
+            <div id="timer" style="margin: 20px 0;"></div>
+            <button id="yes" onclick="show('letter2')">Open Letter</button>
+            <button style="background: #fff; border: 1px solid #ddd;" onclick="show('pics')">Our Memories 📸</button>
+        </div>
+    </div>
+
+    <div id="letter2" class="page">
+        <div id="futureEnvelopeBox" class="envelope-container">
+            <div class="envelope" onclick="revealFutureLetter()">
+                <div class="envelope-flap"></div>
+                <div class="envelope-body"></div>
+                <div class="envelope-seal">💌</div>
+            </div>
+            <p><b>Click the envelope to read the letter.</b></p>
+        </div>
+
+        <div id="futureLetterPaper" class="card" style="display:none; max-width:650px; margin:auto">
+            <h2>🌻 To My Sunshine 🌻</h2>
+            <p id="typedFutureLetter" style="white-space: pre-wrap; text-align: left; margin: 20px 0;"></p>
+            
+            <p style="text-align: right; font-style: italic; margin-top: 20px; color: #8d6e63;">
+                Forever Yours <span id="secretHeart" style="cursor: pointer; user-select: none;">❤️</span>
+            </p>
+
+            <div style="display: flex; justify-content: flex-start;">
+                <button style="background: #eee;" onclick="showFuture()">← Back</button>
+                <button id="yes" style="margin-left: auto;" onclick="show('pics')">Our Memories 📸</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pics" class="page">
+        <div class="card">
+            <h1>📸 Our Memories 📸</h1>
+            <p style="font-size:0.9rem; opacity:0.7; margin-bottom:15px;">💡 Click a text label to change it. Click inside any photo box to upload pictures or tap an existing photo to zoom in!</p>
+            
+            <button class="btn-add" onclick="addNewSlot()">➕ Add More Photos</button>
+            
+            <div class="grid" id="gallery"></div>
+            <button style="background: #eee; margin-top: 30px;" onclick="showFuture()">← Back</button>
+        </div>
+    </div>
+
+<script>
+const defaultSlots = ["The Day We Met", "First Date", "Coffee Together", "Movie Night", "Favorite Memory", "Forever Us"];
+
+const letterText = `My Dearest,
+
+From the moment you came into my life, everything became brighter.
+
+Thank you for making ordinary days feel extraordinary.
+
+Every smile, every laugh, every moment with you has become one of my favorite memories.
+
+I hope this is only the beginning of our beautiful story together.
+
+Forever Yours`;
+
+const futureLetterText = `Hello, Love ❤️
+
+If you're reading this again, it means we've already made another beautiful memory together.
+
+I hope this little letter always reminds you how much you mean to me.
+
+No matter how much time passes, choosing you will always be my favorite decision.
+
+I love you today, tomorrow, and every day after.`;
+
+function show(id){
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('intro').onclick = () => show(localStorage.accepted ? 'future' : 'proposal');
+
+// Foolproof Inescapable Runaway No Button Code 
+const no = document.getElementById('no');
+function moveNo() {
+    const card = document.getElementById('proposalCard');
+    if (!card) return;
+
+    const cardWidth = card.clientWidth;
+    const cardHeight = card.clientHeight;
+    const btnWidth = no.offsetWidth || 80;
+    const btnHeight = no.offsetHeight || 40;
+    const padding = 25;
+
+    const maxX = cardWidth - btnWidth - padding;
+    const maxY = cardHeight - btnHeight - padding;
+
+    let randomX = Math.floor(Math.random() * (maxX - padding)) + padding;
+    let randomY = Math.floor(Math.random() * (maxY - padding)) + padding;
+
+    if (randomX < padding) randomX = padding;
+    if (randomY < padding) randomY = padding;
+
+    no.style.position = 'absolute';
+    no.style.margin = '0';
+    no.style.left = randomX + 'px';
+    no.style.top = randomY + 'px';
+}
+no.onmouseover = moveNo;
+no.onclick = moveNo;
+
+document.getElementById('yes').onclick = () => {
+    localStorage.accepted = 'true';
+    if(!localStorage.acceptedDate) localStorage.acceptedDate = new Date().toISOString();
+    
+    const toast = document.createElement("div");
+    toast.id = "toast";
+    toast.innerHTML = "🎉 She said YES! 💛";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2200);
+    
+    show('letter');
+};
+
+function updateTimer(){
+    if(!localStorage.acceptedDate) return;
+    const start = new Date(localStorage.acceptedDate);
+    const diff = Date.now() - start;
+    const s = Math.floor(diff / 1000) % 60;
+    const m = Math.floor(diff / 60000) % 60;
+    const h = Math.floor(diff / 3600000) % 24;
+    const d = Math.floor(diff / 86400000);
+    
+    const timerEl = document.getElementById('timer');
+    if(timerEl) {
+        timerEl.innerHTML = `<h3>💛 Together For</h3>${d} Days ${h} Hours ${m} Minutes ${s} Seconds<br><small style="opacity:0.5">${start.toLocaleDateString()}</small>`;
+    }
+}
+setInterval(updateTimer, 1000);
+
+function showFuture(){ show('future'); updateTimer(); }
+
+// Lightbox Preview Actions Engine
+function openImagePreview(srcString) {
+    const lightbox = document.getElementById('photoLightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    lightboxImg.src = srcString;
+    lightbox.style.display = 'flex';
+    // Force reflow for css opacity transitions
+    setTimeout(() => lightbox.classList.add('active'), 10);
+}
+
+function closeImagePreview() {
+    const lightbox = document.getElementById('photoLightbox');
+    lightbox.classList.remove('active');
+    setTimeout(() => lightbox.style.display = 'none', 300);
+}
+
+// Dynamic Array Slot System Core Data Engine
+let currentGalleryIds = [];
+
+function loadGallery() {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '';
+    
+    if (localStorage.gallerySlots) {
+        currentGalleryIds = JSON.parse(localStorage.gallerySlots);
+    } else {
+        currentGalleryIds = defaultSlots.map((_, i) => 'slot_' + Date.now() + '_' + i);
+        defaultSlots.forEach((title, i) => {
+            localStorage['title_' + currentGalleryIds[i]] = title;
+        });
+        localStorage.gallerySlots = JSON.stringify(currentGalleryIds);
+    }
+    
+    currentGalleryIds.forEach((idKey) => {
+        renderCard(idKey);
+    });
+}
+
+function renderCard(idKey) {
+    const gallery = document.getElementById('gallery');
+    const div = document.createElement('div');
+    div.className = 'slot card';
+    div.id = idKey;
+    
+    const savedPhoto = localStorage['photo_' + idKey] || '';
+    const savedTitle = localStorage['title_' + idKey] || 'Click to edit label';
+    
+    div.innerHTML = `
+        <h3 contenteditable="true">${savedTitle}</h3>
+        <div class="image-container">
+            ${savedPhoto ? `<img src="${savedPhoto}">` : '<span style="font-size:2rem; opacity:0.4;">🖼️</span>'}
+        </div>
+        <label class="custom-file-upload">
+            <input type="file" accept="image/*" style="display: none;">
+            ✨ Choose Photo
+        </label>
+        <button class="btn-delete">Delete</button>
+    `;
+    
+    const headerTitle = div.querySelector('h3');
+    const input = div.querySelector('input');
+    const imgContainer = div.querySelector('.image-container');
+    const deleteBtn = div.querySelector('.btn-delete');
+    
+    headerTitle.oninput = () => {
+        localStorage['title_' + idKey] = headerTitle.innerText;
+    };
+    
+    // Smart Box Interaction Mode: Zoom Preview if image exists, otherwise Open Upload Dialog
+    imgContainer.onclick = (e) => {
+        const currentImg = imgContainer.querySelector('img');
+        if (currentImg) {
+            openImagePreview(currentImg.src);
+        } else {
+            input.click();
+        }
+    };
+    
+    input.onchange = e => {
+        const f = e.target.files[0];
+        if(!f) return;
+        const r = new FileReader();
+        r.onload = x => {
+            imgContainer.innerHTML = `<img src="${x.target.result}">`;
+            localStorage['photo_' + idKey] = x.target.result;
+        };
+        r.readAsDataURL(f);
+    };
+    
+    deleteBtn.onclick = () => {
+        if(confirm("Are you sure you want to delete this memory box?")) {
+            localStorage.removeItem('photo_' + idKey);
+            localStorage.removeItem('title_' + idKey);
+            
+            currentGalleryIds = currentGalleryIds.filter(item => item !== idKey);
+            localStorage.gallerySlots = JSON.stringify(currentGalleryIds);
+            
+            div.remove();
+        }
+    };
+    
+    gallery.appendChild(div);
+}
+
+function addNewSlot() {
+    const uniqueId = 'slot_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    currentGalleryIds.push(uniqueId);
+    localStorage.gallerySlots = JSON.stringify(currentGalleryIds);
+    localStorage['title_' + uniqueId] = 'Our Next Milestone';
+    
+    renderCard(uniqueId);
+}
+
+loadGallery();
+
+// Letter 1 Typewriter UI Trigger
+function openEnvelope(){
+    document.getElementById('envelope').style.transform = 'scale(.8) rotateX(80deg)';
+    setTimeout(() => {
+        document.getElementById('envelopeBox').style.display = 'none';
+        document.getElementById('letterPaper').style.display = 'block';
+        typeLetter();
+    }, 500);
+}
+
+function typeLetter(){
+    const el = document.getElementById('typedLetter');
+    if(el.dataset.done) return;
+    let i = 0;
+    function t(){
+        if(i <= letterText.length){
+            el.textContent = letterText.slice(0, i++);
+            setTimeout(t, 25);
+        } else {
+            el.dataset.done = 1;
+            document.getElementById('ok-btn').style.display = 'inline-block';
+        }
+    }
+    t();
+}
+
+// Letter 2 Typewriter UI Trigger
+function revealFutureLetter(){
+    document.getElementById('futureEnvelopeBox').style.display = 'none';
+    document.getElementById('futureLetterPaper').style.display = 'block';
+    
+    const el = document.getElementById('typedFutureLetter');
+    if(el.dataset.done) return;
+    let i = 0;
+    function type(){
+        if(i <= futureLetterText.length){
+            el.textContent = futureLetterText.slice(0, i++);
+            setTimeout(type, 25);
+        } else {
+            el.dataset.done = 1;
+        }
+    }
+    type();
+}
+
+// 10x Secret Heart Multi-click Command Engine
+let resetClicks = 0;
+document.getElementById('secretHeart').addEventListener('click', function() {
+    resetClicks++;
+    if (resetClicks >= 10) {
+        localStorage.clear();
+        alert('🌻 Secret reset complete! Everything has been safely cleared.');
+        window.location.reload();
+    }
+});
+
+if(localStorage.accepted){ showFuture(); }
+</script>
+
+</body>
+</html>
